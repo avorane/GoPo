@@ -1,0 +1,77 @@
+<html>
+  <head>
+  
+   	<title>GOPO</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge; charset=utf-8" />
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+    
+    <link rel="stylesheet" href="../node_modules/material-design-lite/material.min.css">
+    <script src="../node_modules/material-design-lite//material.min.js"></script>
+	
+	<style>
+		#map {
+        	height: 400px;
+        	width: 100%;
+       }
+	</style>
+	
+  </head>
+  <body>
+    <!-- Always shows a header, even in smaller screens. -->
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+      <header class="mdl-layout__header">
+        <div class="mdl-layout__header-row">
+          <!-- Title -->
+          <span class="mdl-layout-title">GOPO</span>
+          <!-- Add spacer, to align navigation to the right -->
+          <div class="mdl-layout-spacer"></div>
+          <!-- Navigation. We hide it in small screens. -->
+          <nav class="mdl-navigation mdl-layout--large-screen-only">
+            <a class="mdl-navigation__link" href="">Link</a>
+            <a class="mdl-navigation__link" href="">Link</a>
+            <a class="mdl-navigation__link" href="">Link</a>
+            <a class="mdl-navigation__link" href="">Link</a>
+          </nav>
+        </div>
+      </header>
+      <div class="mdl-layout__drawer">
+        <span class="mdl-layout-title">Title</span>
+        <nav class="mdl-navigation">
+          <a class="mdl-navigation__link" href="">Link</a>
+          <a class="mdl-navigation__link" href="">Link</a>
+          <a class="mdl-navigation__link" href="">Link</a>
+          <a class="mdl-navigation__link" href="">Link</a>
+        </nav>
+      </div>
+      <main class="mdl-layout__content">
+        <div class="page-content">
+        
+          <h3>My Maps</h3>
+	      	<div class="control-ui"><div id="search-control-ui">
+		      <input id="query-input" autofocus="">
+		      <input id="geocode-button" type="button" value="Geocoder">
+		    </div>
+		    <div id="map"></div>
+		    <script>
+		      function initMap() {
+		        var uluru = {lat: 44.9338, lng: 1.8535};
+		        var map = new google.maps.Map(document.getElementById('map'), {
+		          zoom: 12,
+		          center: uluru
+		        });
+		        var marker = new google.maps.Marker({
+		          position: uluru,
+		          map: map
+		        });
+		      }
+		    </script>
+		    <script async defer
+		    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqwPesSRd4j-HDQdCI78AY-_P6qPr2u3w&callback=initMap">
+		    </script>
+        
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
