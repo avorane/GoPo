@@ -1,7 +1,6 @@
-<!-- CSS POPUP POUR LES DIFFERENTS MENUS -->
+/* POPUP LIEU */
 
-	.oModal {
-		
+	.oModal1 {
 		position: fixed;
 		z-index: 99999;
 		top: 0;
@@ -10,22 +9,148 @@
 		left: 0;
 		background: rgba(0, 0, 0, 0.8);
 		pointer-events: none;
-		
 	}
 	
-	.oModal:target {
-		
+	.oModal1:target {
 		opacity:1;
-		
 	}
 	
-	.oModal > div {
-		
-		max-width: 600px;
-		position: relative;
-		margin: 10% auto;
+	.oModal1 > div {
+		width: 96%;
+		position: fixed;
+
+		right: 1;
+		bottom: 0;
+		left: 1;
 		padding: 8px 8px 8px 8px;
 		border-radius: 2px;
 		background: #fff;
-		
+	}
+	
+	
+/* POPUP LIEU DETAIL */
+
+	.oModal2 {
+		position: fixed;
+		z-index: 99999;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background: rgba(0, 0, 0, 0.8);
+		pointer-events: none;
+	}
+	
+	.oModal2:target {
+		opacity:1;
+	}
+	
+	.oModal2 > div {
+		width: 96%;
+		position: relative;
+		margin: 18% auto;
+		padding: 8px 8px 8px 8px;
+		border-radius: 2px;
+		background: #fff;
+	}
+	
+	
+/* POPUP CLASSEMENT */	
+
+	.oModal3 {
+		position: fixed;
+		z-index: 99999;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background: rgba(0, 0, 0, 0.8);
+		pointer-events: none;
+	}
+	
+	.oModal3:target {
+		opacity:1;
+	}
+	
+	.oModal3 > div {
+		width: 96%;
+		position: relative;
+		margin: 14% auto;
+		padding: 8px 8px 8px 8px;
+		border-radius: 2px;
+		background: #fff;
+	}
+	
+	
+/* POPUP MES LIEUX */	
+
+	.oModal4 {
+		position: fixed;
+		z-index: 99999;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background: rgba(0, 0, 0, 0.8);
+		pointer-events: none;
+	}
+	
+	.oModal4:target {
+		opacity:1;
+	}
+	
+	.oModal4 > div {
+		width: 96%;
+		position: relative;
+		margin: 14% auto;
+		padding: 8px 8px 8px 8px;
+		border-radius: 2px;
+		background: #fff;
+	}
+	
+	
+/* POPUP GESTION COMPTE */
+
+	.oModal5 {
+		position: fixed;
+		z-index: 99999;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background: rgba(0, 0, 0, 0.8);
+		pointer-events: none;
+	}
+	
+	.oModal5:target {
+		opacity:1;
+	}
+	
+	.oModal5 > div {
+		width: 96%;
+		position: relative;
+		margin: 14% auto;
+		padding: 8px 8px 8px 8px;
+		border-radius: 2px;
+		background: #fff;
+	}
+	
+/* STYLES GENERAUX */
+
+	#map {
+    	height: 91%;
+    	width: 100%;
+   }
+   
+   .material-icons{
+   		padding-top:10px;
+   }
+   
+   .demo-list-three {
+		width: 85%;
+		padding:20px 0px;
+	}
+	
+	.mdl-list__item--three-line {
+		height:130px;
 	}

@@ -6,8 +6,9 @@
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
     <!-- modifié par nicolas : racine des modules de node dans le repertoire node_modules donc plus besoin de commencer les chemins par ../node_modules -->
-    <link rel="stylesheet" href="/material-design-lite/material.min.css">
-    <script src="material-design-lite//material.min.js"></script>
+    <link rel="stylesheet" href="../node_modules/material-design-lite/material.min.css">
+    <script src="../node_modules/material-design-lite//material.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <!-- fin des modifications -->
 
     <style>
@@ -42,7 +43,9 @@
 						</form>
 					</div>
 					<div class="mdl-card__actions mdl-card--border">
-						<button class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect">Log in</button>
+						<button class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" style="float:left;">Log in</button>
+
+						<button class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" style="float:right;">Forgot Password</button>
 					</div>
 				</div>
 			</main>
