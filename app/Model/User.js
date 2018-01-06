@@ -16,6 +16,9 @@ module.exports = function(sequelize, Sequelize) {
 	},
 	mot_de_passe: {
 		type: Sequelize.STRING
+	},
+	credit: {
+		type: Sequelize.INTEGER
 	}
 	}, {
 	tableName: 'utilisateur'

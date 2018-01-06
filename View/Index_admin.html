@@ -6,14 +6,15 @@
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
     
-    <link rel="stylesheet" href="../node_modules/material-design-lite/material.min.css">
-    <link rel="stylesheet" href="../node_modules/highcharts/css/highcharts.css">
-    <script src="../node_modules/material-design-lite//material.min.js"></script>
-    <script src="../node_modules/jquery/dist/jquery.min.js"></script>
+    <link rel="stylesheet" href="/node_modules/material-design-lite/material.min.css">
+    <link rel="stylesheet" href="/node_modules/highcharts/css/highcharts.css">
+    <script src="/node_modules/material-design-lite//material.min.js"></script>
+    <script src="/node_modules/jquery/dist/jquery.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <script src="../node_modules/highcharts/js/highcharts.js"></script>
+    <script src="/node_modules/highcharts/js/highcharts.js"></script>
 	
-	<link rel="stylesheet" href="Styles_index_admin.css">
+	<link rel="stylesheet" href="/app/View/Styles_index_admin.css">
+	<script src="/socket.io/socket.io.js"></script>
 	
 
   </head>
@@ -139,7 +140,7 @@
           	<ul class="mdl-list">
 			  <li class="mdl-list__item mdl-list__item--three-line" style="margin-top:-40px;">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
 			      <span>Paris</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -154,7 +155,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
 			      <span>Londres</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -168,7 +169,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
 			      <span>New York</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -182,7 +183,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
 			      <span>Abidjan</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -196,7 +197,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
 			      <span>Sydney</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -210,7 +211,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
 			      <span>Tokyo</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -231,7 +232,7 @@
           	<ul class="mdl-list">
 			  <li class="mdl-list__item mdl-list__item--three-line" style="margin-top:-40px;">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Peter</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -246,7 +247,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Jane</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -260,7 +261,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Malcolm</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -274,7 +275,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Dom</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -288,7 +289,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Cyril</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -302,7 +303,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Jojo</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -476,7 +477,7 @@
 			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone" style="overflow-y:hidden;max-height:500px;">
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone">
 					<div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-phone" style="float:left;width:40%;padding-top:30px;">
-						<img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
+						<img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
 					</div>
 					<div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-phone" style="float:right;width:40%;font-size:20px;padding-top:30px;">
 						<span>Nom du lieu</span>
@@ -485,7 +486,7 @@
 					</div>
 				</div>
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
-					<img  class='article-image' src='Images/paysage_grand.png' style='margin:auto;' border='0' alt=''>
+					<img  class='article-image' src='/View/Images/paysage_grand.png' style='margin:auto;' border='0' alt=''>
 				</div>
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
 					<span>Info du lieu</span>

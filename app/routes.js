@@ -1,5 +1,8 @@
 module.exports = function(app, passport, model, io) {
 
+    var locked_zones_utilisateur = {};
+    var zone_utilisateur_present = {};
+
     // =====================================
     // HOME PAGE (with login links) ========
     // =====================================
@@ -38,11 +41,16 @@ module.exports = function(app, passport, model, io) {
     
     app.put('/vendre', function(req, res, next) {
     	console.log(req.body);
-    	model.zone.findOne({where: {id_zone: req.body.id_zone}}).then(zone => {
+    	model.zone.findOne({where: {id_zone: req.body.id_zone, id_utilisateur: req.user.id_utilisateur}}).then(zone => {
+    	    var gain = zone.gain;
+    		model.utilisateur.findOne({where: {id_utilisateur: req.user.id_utilisateur}}).then(user => {
+    		    var nouveau_credit = user.credit + 0.75 * zone.valeur;
+    		    user.update({credit: nouveau_credit});
+    		    io.sockets.emit('zone_vendu', zone);
+    		    res.json({credit: user.credit});
+    		});
     		zone.update({id_utilisateur: null});
-    	}).then(zone => {
-    		res.sendStatus(200);
-    	})
+    	});
     });
     
     app.put('/acheter', function(req, res, next) {
@@ -52,12 +60,13 @@ module.exports = function(app, passport, model, io) {
     	model.zone.findOne({where: {id_zone: req.body.id_zone}}).then(zone => {
     		cout = zone.valeur;
     		zone.update({id_utilisateur: req.user.id_utilisateur});
+    		io.sockets.emit('zone_acquired', zone);
     	}).then(zone => {
     		model.utilisateur.findOne({where: {id_utilisateur: req.user.id_utilisateur}}).then(user => {
     			capital = user.credit;
     			capital = capital - cout;
     			user.update({credit: capital});
-    			res.sendStatus(200);
+    		    res.json({credit: user.credit});
     		});
     	});
     });
@@ -79,6 +88,61 @@ module.exports = function(app, passport, model, io) {
     }
     
     io.sockets.on('connection', function (socket) {
-        console.log('Un client est connecté ! : ' + socket.request.user);
+        console.log('Un client est connecté avec l\'id = ' + socket.request._query.id);
+        socket.userId = socket.request._query.id;
+        socket.on("get_zones", function(data) {
+            model.sequelize.query('CALL voir(:id_user, :lat, :lng, 30)', {replacements: {id_user:data.id, lat: parseFloat(data.latitude), lng: parseFloat(data.longitude)}}).then(r => {
+        		console.log(r);
+        		socket.emit('give_zones', r);
+        		for (var zone of r) {
+        		    console.log('rayon: ' + zone.rayon);
+        		    distance = (6366*Math.acos(Math.cos(radians(data.latitude))*Math.cos(radians(zone.latitude))*Math.cos(radians(zone.longitude) - radians(data.longitude))+Math.sin(radians(data.latitude))*Math.sin(radians(zone.latitude)))) * 1000;
+        		    console.log('distance : ' + distance);
+        		    if (distance <= zone.rayon) {
+        		        console.log('distance OK');
+        		        if (zone_utilisateur_present[data.id] != zone.id_zone && zone.id_utilisateur != data.id) { 
+        		            console.log('utilisateur pas deja present zone');
+        		            var key = zone.id_zone;
+        		            if (locked_zones_utilisateur[data.id] === undefined || locked_zones_utilisateur[data.id].key <= Date.now()) {
+            		            console.log(data.id + ' est entré dans la zone ' + zone.id_zone + ' de ' + zone.id_utilisateur);
+	                            model.utilisateur.findOne({where: {id_utilisateur: zone.id_utilisateur}}).then(user => {
+	                                if (user != null) {
+	                                    var nouveau_credit = user.credit + zone.gain;
+	                                    var id_utilisateur_credite = user.id_utilisateur;
+	                                    user.update({credit: nouveau_credit});
+	                                    var temps = new Date(Date.now());
+	                                    temps.setMinutes(temps.getMinutes() + 1);
+	                                    console.log(temps);
+	                                    zone_utilisateur_present[data.id] = zone.id_zone;
+	                                    var key = zone.id_zone;
+	                                    locked_zones_utilisateur[data.id]= {key: temps};
+	                                    console.log("connected : " + io.sockets.connected);
+	                                    for (var socket_id of Object.keys(io.sockets.sockets)) {
+	                                        var socket_user = io.sockets.connected[socket_id];
+	                                        if (socket_user.userId == id_utilisateur_credite) {
+	                                            console.log('Je credite et je notifie ' + id_utilisateur_credite);
+	                                            socket_user.emit('get_credit', {credit: nouveau_credit});
+	                                            break;
+                                            }
+                                        }
+                                    }
+	                            });
+	                        }
+	                    }
+	                    break;
+                    } else {
+                        if (zone_utilisateur_present[data.id] == zone.id_zone) {
+                            console.log(data.id + ' sort de la zone ' + zone.id_zone);
+                            delete zone_utilisateur_present[data.id];
+                        }
+                   }
+                }
+        	});
+        	
+        });
     });
+    
+    function radians(degree) {
+        return degree * (Math.PI / 180);
+    }
 }
