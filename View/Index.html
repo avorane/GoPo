@@ -7,6 +7,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
     
     <link rel="stylesheet" href="node_modules/material-design-lite/material.min.css">
+    <link rel="stylesheet" href="node_modules/materialize-css/dist/css/materialize.css">
     <script src="node_modules/material-design-lite//material.min.js"></script>
     <script src="node_modules/jquery/dist/jquery.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
@@ -29,7 +30,7 @@
       </header>
       <div class="mdl-layout__drawer" style="height:50%;margin-top:14%;">
         <nav class="mdl-navigation">
-          <a class="mdl-navigation__link" onclick="document.getElementById('oModal1').style.display = 'block';"><img  class='article-image' src='/View/Images/statistiques.png' style='width:30px;height:30px;margin-right:10px;' border='0' alt=''>Statistiques</a>
+          <a class="mdl-navigation__link" onclick="document.getElementById('oModal6').style.display = 'block';"><img  class='article-image' src='/View/Images/statistiques.png' style='width:30px;height:30px;margin-right:10px;' border='0' alt=''>Statistiques</a>
           <a class="mdl-navigation__link" id="sortPlayers"><img  class='article-image' src='/View/Images/classement.png' style='width:30px;height:30px;margin-right:10px;margin-right:10px;' border='0' alt=''>Classement</a>
           <a class="mdl-navigation__link" id="getZones"><img  class='article-image' src='/View/Images/mes_lieux.png' style='width:30px;height:30px;margin-right:10px;' border='0' alt=''>Mes lieux</a>
           <a class="mdl-navigation__link" onclick="document.getElementById('oModal4').style.display = 'block';"><img  class='article-image' src='/View/Images/deconnexion.png' style='width:30px;height:30px;margin-right:10px;' border='0' alt=''>Deconnexion</a>
@@ -46,7 +47,7 @@
 			    var mon_credit;
 			    var mon_pseudo;
 			    var list_lieux_affiches = {};
-			    var socket = io.connect("http://127.0.0.1:8090");
+			    var socket;
 			    
 			    $.get("http://127.0.0.1:8090/data",
 			        function(data) {
@@ -54,6 +55,69 @@
 			            mon_credit = data.credit;
 			            mon_pseudo = data.pseudo;
 			            $("#solde").text("Solde : " + mon_credit + " credits");
+			            socket = io.connect("http://127.0.0.1:8090", {query: "id=" + data.id_utilisateur});
+			            socket.on('zone_acquired', function(data) {
+				        console.log('zone achete par ' + data.id_utilisateur);
+				        if (list_lieux_affiches[data.id_zone] !== undefined) {
+				            var color = '#00FF00';
+					        if (data.id_utilisateur !== null) {
+						        if (data.id_utilisateur == mon_id) {
+							        color = '#0000FF';
+						        } else {
+							        color = '#FF0000';
+						        }
+					        }
+					        list_lieux_affiches[data.id_zone].zone = data;
+				            list_lieux_affiches[data.id_zone].area.setOptions({fillColor: color});
+				            add_listener_circle(list_lieux_affiches[data.id_zone].area, data);
+				       }
+		            });
+		            
+		            socket.on('zone_vendu', function(data) {
+		                console.log('zone ' + data.id_zone + ' vendu');
+				        if (list_lieux_affiches[data.id_zone] !== undefined) {
+				            var color = '#00FF00';
+					        list_lieux_affiches[data.id_zone].zone = data;
+				            list_lieux_affiches[data.id_zone].area.setOptions({fillColor: color});
+				            add_listener_circle(list_lieux_affiches[data.id_zone].area, data);
+				        }
+				        
+		            });
+		            
+		            socket.on('get_credit', function(data) {
+		                console.log('J\'ai reçu du crédit');
+		                mon_credit = data.credit;
+		                $("#solde").text("Solde : " + data.credit + " credits");
+		            });
+		            
+		            socket.on('give_zones', function(data) {
+				        $.each(data, function(key, value) {
+						     if (list_lieux_affiches[value.id_zone] === undefined) {
+							        var color = '#00FF00';
+							        if (value.id_utilisateur !== null) {
+								        if (value.id_utilisateur == mon_id) {
+									        color = '#0000FF';
+								        } else {
+									        color = '#FF0000';
+								        }
+							        }
+							        var latlng = new google.maps.LatLng(value.latitude, value.longitude);
+							        var circle = new google.maps.Circle({
+                    				center: latlng,
+                    				map: carte,
+                    				radius: value.rayon,          // IN METERS.
+                    				fillColor: color,
+                    				fillOpacity: 0.5,
+                    				strokeColor: "#FFF",
+                    				strokeWeight: 0         // DON'T SHOW CIRCLE BORDER.
+                				});
+                				add_listener_circle(circle, value);
+							    list_lieux_affiches[value.id_zone] = {zone: value, area: circle};
+						     }
+					
+				        });
+				    });
+				
 			    });
 			    
 				function geo_ok(position) {
@@ -97,10 +161,10 @@
 			    if (mon_marqueur != undefined) {	
 					var new_lat = position.coords.latitude;
 					var new_long = position.coords.longitude;
-					if (new_lat != mon_marqueur.getPosition().lat() || new_long != mon_marqueur.getPosition().lng()) {
-						mon_marqueur.setPosition(new google.maps.LatLng(new_lat, new_long));	
-						carte.panTo(new google.maps.LatLng(new_lat, new_long))				
-					}
+					mon_marqueur.setPosition(new google.maps.LatLng(new_lat, new_long));
+					if (socket !== undefined) {
+					    get_zones_by_server(new_lat, new_long);
+					}				
 			    } else {
 			        set_position(position);
 			    }
@@ -130,8 +194,10 @@
 					title: mon_pseudo
 				});
 				mon_marqueur.setMap(carte);
-				setInterval(mouvement_marqueur, 1000);
-				voir();
+				setInterval(mouvement_marqueur, 5000);
+				if (socket !== undefined) {
+				    get_zones_by_server(latitude, longitude);
+				}
 			}
 			
 			function set_position_error(error) {
@@ -140,7 +206,7 @@
 				
 				function getListPlayers() {
 					$(".oModal3").show();
-					$.get("http://176.159.137.250:8090/players",
+					$.get("http://127.0.0.1:8090/players",
 						function(data) {
 							sortListPlayers(data);
 						},
@@ -175,6 +241,7 @@
 						data: {id_zone: id_lieu},
 						success: function(data) {
 							$('#lieu_' + id_lieu).remove();
+							$("#solde").text("Solde : " + data.credit + " credits");
 						}
 					});
 				}
@@ -183,50 +250,7 @@
 					$.get("http://127.0.0.1:8090/voir",
 						{latitude: latitude, longitude: longitude},
 						function(data) {
-							$.each(data, function(key, value) {
-								if (list_lieux_affiches[value.id_zone] === undefined) {
-									var color = '#00FF00';
-									if (value.id_utilisateur !== null) {
-										if (value.id_utilisateur == mon_id) {
-											color = '#0000FF';
-										} else {
-											color = '#FF0000';
-										}
-									}
-									var latlng = new google.maps.LatLng(value.latitude, value.longitude);
-									var circle = new google.maps.Circle({
-                    				center: latlng,
-                    				map: carte,
-                    				radius: 50,          // IN METERS.
-                    				fillColor: color,
-                    				fillOpacity: 0.5,
-                    				strokeColor: "#FFF",
-                    				strokeWeight: 0         // DON'T SHOW CIRCLE BORDER.
-                				});
-                
-            					google.maps.event.addListener(circle, 'click', function(ev) {
-            						$("#nomLieu").empty();
-            						$("#coutLieu").empty();
-            						$("#nomLieu").text(value.libelle);
-            						$("#coutLieu").text(value.valeur);
-            						if (google.maps.geometry.spherical.computeDistanceBetween(mon_marqueur.getPosition(), circle.getCenter()) <= circle.getRadius()) {
-                						$("#confirmerAchat").click(function () {
-                							acheterLieu(value.id_zone);
-                						});
-                					} else {
-                					    $("#achat").prop('disabled', true);
-                					    $("#achat").text('Trop loin');
-                				    }
-                				    if (value.id_utilisateur == mon_id) {
-                				        $("#achat").prop('disabled', true);
-                					    $("#achat").text('A vous');
-                					}
-            						$("#oModal1").show();
-            						
-									});
-								}
 							
-						});
 					}, "json");
 				}
 				
@@ -236,9 +260,48 @@
 						type: "PUT",
 						data: {id_zone: id_lieu},
 						success: function(data) {
+						    mon_credit = data.credit;
+						    $("#solde").text("Solde : " + data.credit + " credits");
+						    $("#oModal2").hide();
+							$("#oModal1").hide();
 						}
 					});
 				}
+				
+				function get_zones_by_server(lat, lng) {
+				    socket.emit("get_zones", {id: mon_id, latitude: lat, longitude: lng});
+				}
+				
+				function add_listener_circle(circle, zone) {
+				    google.maps.event.addListener(circle, 'click', function(ev) {
+						$("#nomLieu").empty();
+						$("#coutLieu").empty();
+						$("#nomLieu").text(zone.libelle);
+						$("#coutLieu").text(zone.valeur);
+						if (zone.id_utilisateur == mon_id) {
+						    $("#achat").prop('disabled', true);
+        					$("#achat").text('A vous!');
+        			    } else {
+        			        if (google.maps.geometry.spherical.computeDistanceBetween(mon_marqueur.getPosition(), circle.getCenter()) <= circle.getRadius()) {
+						        if (zone.id_utilisateur == null) {
+						            $("#achat").prop("disabled", false);
+						            $("#achat").text("Acheter");
+						            $("#confirmerAchat").click(function () {
+							            acheterLieu(zone.id_zone);
+						            });
+						        } else {
+            				        $("#achat").prop('disabled', true);
+            					    $("#achat").text('Déjà prise!');
+            					}
+        					} else {
+        					    $("#achat").prop('disabled', true);
+        					    $("#achat").text('Trop loin!');
+        				    }
+        				}
+						$("#oModal1").show();        						
+				    });
+		        }
+				    
 
 				$("#sortPlayers").click(function() {
 					getListPlayers();
@@ -254,6 +317,42 @@
     </div>
   </body>
 </html>
+
+<!-- POPUP STATS -->
+
+    <div id="oModal6" class="oModal6" style="overflow-y:none;display:none;z-index:175;pointer-events: all;">
+		<div style="border-radius:4px;">
+			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone">
+				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone">
+					<table id="stats" class="striped">
+					    <thead>
+					        <th>Nom lieu</th>
+					        <th>Date acquisition</th>
+					        <th>Nombre de passages</th>
+					        <th>Gain total</th>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Hasard</td>
+                                <td>12 mai 2017</td>
+                                <td>15</td>
+                                <td>150</td>
+                           </tr>
+                            <tr>
+                                <td>Hasard</td>
+                                <td>12 mai 2017</td>
+                                <td>15</td>
+                                <td>150</td>
+                           </tr>
+                       </tbody>
+                    </table>
+				</div>
+				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
+					<button type="button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="document.getElementById('oModal2').style.display = 'block';" style="border: solid 1px #0089c2;padding:0;margin:auto;width:144px;height:40px;color: #0089c2;;text-align:center;background-color: white;border-radius: 4px;" id="achat">Quitter</button>
+				</div>
+			</div>
+		</div>
+	</div>
 
 <!--POPUP LIEU-->	
 	
@@ -335,7 +434,84 @@
 			</div>
 			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone" style="overflow-y:auto;max-height:500px;">
 				<ul class="demo-list-three mdl-list" id="listPlayers">
-				
+				 <!-- <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <i class="material-icons mdl-list__item-avatar">person</i>
+				      <span>Bryan Cranston</span>
+				      <span class="mdl-list__item-text-body">
+				        Bryan Cranston played the role of Walter in Breaking Bad. He is also known
+				        for playing Hal in Malcom in the Middle.
+				      </span>
+				    </span>
+				    <span class="mdl-list__item-secondary-content">
+				      <a class="mdl-list__item-secondary-action" href="#"><i class="material-icons">star</i></a>
+				    </span>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <i class="material-icons  mdl-list__item-avatar">person</i>
+				      <span>Aaron Paul</span>
+				      <span class="mdl-list__item-text-body">
+				        Aaron Paul played the role of Jesse in Breaking Bad. He also featured in
+				        the "Need For Speed" Movie.
+				      </span>
+				    </span>
+				    <span class="mdl-list__item-secondary-content">
+				      <a class="mdl-list__item-secondary-action" href="#"><i class="material-icons">star</i></a>
+				    </span>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <i class="material-icons  mdl-list__item-avatar">person</i>
+				      <span>Bob Odenkirk</span>
+				      <span class="mdl-list__item-text-body">
+				        Bob Odinkrik played the role of Saul in Breaking Bad. Due to public fondness for the
+				        character, Bob stars in his own show now, called "Better Call Saul".
+				      </span>
+				    </span>
+				    <span class="mdl-list__item-secondary-content">
+				      <a class="mdl-list__item-secondary-action" href="#"><i class="material-icons">star</i></a>
+				    </span>
+				  </li>
+				   <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <i class="material-icons mdl-list__item-avatar">person</i>
+				      <span>Bryan Cranston</span>
+				      <span class="mdl-list__item-text-body">
+				        Bryan Cranston played the role of Walter in Breaking Bad. He is also known
+				        for playing Hal in Malcom in the Middle.
+				      </span>
+				    </span>
+				    <span class="mdl-list__item-secondary-content">
+				      <a class="mdl-list__item-secondary-action" href="#"><i class="material-icons">star</i></a>
+				    </span>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <i class="material-icons  mdl-list__item-avatar">person</i>
+				      <span>Aaron Paul</span>
+				      <span class="mdl-list__item-text-body">
+				        Aaron Paul played the role of Jesse in Breaking Bad. He also featured in
+				        the "Need For Speed" Movie.
+				      </span>
+				    </span>
+				    <span class="mdl-list__item-secondary-content">
+				      <a class="mdl-list__item-secondary-action" href="#"><i class="material-icons">star</i></a>
+				    </span>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <i class="material-icons  mdl-list__item-avatar">person</i>
+				      <span>Bob Odenkirk</span>
+				      <span class="mdl-list__item-text-body">
+				        Bob Odinkrik played the role of Saul in Breaking Bad. Due to public fondness for the
+				        character, Bob stars in his own show now, called "Better Call Saul".
+				      </span>
+				    </span>
+				    <span class="mdl-list__item-secondary-content">
+				      <a class="mdl-list__item-secondary-action" href="#"><i class="material-icons">star</i></a>
+				    </span>
+				  </li> -->
 				</ul>
 			</div>
 		</div>
@@ -359,7 +535,62 @@
 			</div>
 			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone" style="overflow-y:auto;max-height:500px;">
 				<ul class="demo-list-three mdl-list" id="listLieux">
-				 
+				  <!--
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/paysage.png' style='width:30px;height:40px;' border='0' alt=''>
+				      <span>Aaron Paul</span>
+				      <span class="mdl-list__item-text-body">
+				        Aaron Paul played the role of Jesse in Breaking Bad. He also featured in
+				        the "Need For Speed" Movie.
+				      </span>
+				    </span>
+					<img  class='article-image' src='Images/vendre.png' style='width:30px;height:30px;padding-top:10xp;' border='0' alt=''>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/paysage.png' style='width:30px;height:40px;' border='0' alt=''>
+				      <span>Bob Odenkirk</span>
+				      <span class="mdl-list__item-text-body">
+				        Bob Odinkrik played the role of Saul in Breaking Bad. Due to public fondness for the
+				        character, Bob stars in his own show now, called "Better Call Saul".
+				      </span>
+				    </span>
+					<img  class='article-image' src='Images/vendre.png' style='width:30px;height:30px;padding-top:10xp;' border='0' alt=''>
+				  </li>
+				   <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/paysage.png' style='width:30px;height:40px;' border='0' alt=''>
+				      <span>Bryan Cranston</span>
+				      <span class="mdl-list__item-text-body">
+				        Bryan Cranston played the role of Walter in Breaking Bad. He is also known
+				        for playing Hal in Malcom in the Middle.
+				      </span>
+				    </span>
+					<img  class='article-image' src='Images/vendre.png' style='width:30px;height:30px;padding-top:10xp;' border='0' alt=''>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/paysage.png' style='width:30px;height:40px;' border='0' alt=''>
+				      <span>Aaron Paul</span>
+				      <span class="mdl-list__item-text-body">
+				        Aaron Paul played the role of Jesse in Breaking Bad. He also featured in
+				        the "Need For Speed" Movie.
+				      </span>
+				    </span>
+					<img  class='article-image' src='Images/vendre.png' style='width:30px;height:30px;padding-top:10xp;' border='0' alt=''>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/paysage.png' style='width:30px;height:40px;' border='0' alt=''>
+				      <span>Bob Odenkirk</span>
+				      <span class="mdl-list__item-text-body">
+				        Bob Odinkrik played the role of Saul in Breaking Bad. Due to public fondness for the
+				        character, Bob stars in his own show now, called "Better Call Saul".
+				      </span>
+				    </span>
+					<img  class='article-image' src='Images/vendre.png' style='width:30px;height:30px;padding-top:10xp;' border='0' alt=''>	
+				  </li> -->
 				</ul>
 			</div>
 		</div>
