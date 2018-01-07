@@ -6,15 +6,14 @@
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
     
-    <link rel="stylesheet" href="/node_modules/material-design-lite/material.min.css">
-    <link rel="stylesheet" href="/node_modules/highcharts/css/highcharts.css">
-    <script src="/node_modules/material-design-lite//material.min.js"></script>
-    <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+    <link rel="stylesheet" href="../node_modules/material-design-lite/material.min.css">
+    <link rel="stylesheet" href="../node_modules/highcharts/css/highcharts.css">
+    <script src="../node_modules/material-design-lite//material.min.js"></script>
+    <script src="../node_modules/jquery/dist/jquery.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <script src="/node_modules/highcharts/js/highcharts.js"></script>
+    <script src="../node_modules/highcharts/js/highcharts.js"></script>
 	
-	<link rel="stylesheet" href="/app/View/Styles_index_admin.css">
-	<script src="/socket.io/socket.io.js"></script>
+	<link rel="stylesheet" href="Styles_index_admin.css">
 	
 
   </head>
@@ -54,6 +53,8 @@
           	<input id="pac-input" class="controls" type="text" placeholder="Rechercher un lieu">
           	<div id="map" style="height:86%;"></div>
 		    <script>
+		    
+		        var marker;
 
 				function initAutocomplete() {
 			        var map = new google.maps.Map(document.getElementById('map'), {
@@ -63,9 +64,13 @@
 			        });
 			        
 			        var uluru = {lat: 44.9339, lng: 1.8535};
-			        var marker = new google.maps.Marker({
+			        marker = new google.maps.Marker({
 			          position: uluru,
 			          map: map
+			        });
+			        
+			        marker.addListener('click', function() {
+			            $("#oModal1").show();
 			        });
 			
 			        // Create the search box and link it to the UI element.
@@ -77,22 +82,17 @@
 			        map.addListener('bounds_changed', function() {
 			          searchBox.setBounds(map.getBounds());
 			        });
+			        
+			        map.addListener('click', function(ev) {
+			            marker.setPosition(ev.latLng);
+			        });
 			
-			        var markers = [];
-			        // Listen for the event fired when the user selects a prediction and retrieve
-			        // more details for that place.
 			        searchBox.addListener('places_changed', function() {
 			          var places = searchBox.getPlaces();
 			
 			          if (places.length == 0) {
 			            return;
 			          }
-			
-			          // Clear out the old markers.
-			          markers.forEach(function(marker) {
-			            marker.setMap(null);
-			          });
-			          markers = [];
 			
 			          // For each place, get the icon, name and location.
 			          var bounds = new google.maps.LatLngBounds();
@@ -108,15 +108,21 @@
 			              anchor: new google.maps.Point(17, 34),
 			              scaledSize: new google.maps.Size(25, 25)
 			            };
-			
-			            // Create a marker for each place.
-			            markers.push(new google.maps.Marker({
-			              map: map,
-			              icon: icon,
-			              title: place.name,
-			              position: place.geometry.location
-			            }));
-			
+			            if (marker !== undefined) {
+			                marker.setOptions({
+			                  map: map,
+			                  icon: icon,
+			                  title: place.name,
+			                  position: place.geometry.location
+			                });
+			            } else {
+			                marker = new google.maps.Marker({
+			                  map: map,
+			                  icon: icon,
+			                  title: place.name,
+			                  position: place.geometry.location
+			                });
+			            }
 			            if (place.geometry.viewport) {
 			              // Only geocodes have viewport.
 			              bounds.union(place.geometry.viewport);
@@ -127,6 +133,24 @@
 			          map.fitBounds(bounds);
 			        });
 			      }
+			      
+                function ajoutlieu() {
+                    var lat = marker.position.lat();
+                    var lng = marker.position.lng();
+                    var nom = $("#nom_lieu").val();
+                    var descriptif = $("#descriptif").val();
+                    var cout = $("#cout").val();
+                    var gain = $("#gain").val();
+                    var rayon = $("#rayon").val();
+                    $.ajax({
+                        url: "http://127.0.0.1:8090/ajoutlieu",
+						type: "PUT",
+						data: {latitude: lat, longitude: lng, libelle: nom, description: descriptif, valeur: cout, gain: gain, rayon: rayon},
+						success: function(data) {
+							$("#oModal1").hide();
+						}
+					}); 
+			   }
 				
 		    </script>
 		    
@@ -140,7 +164,7 @@
           	<ul class="mdl-list">
 			  <li class="mdl-list__item mdl-list__item--three-line" style="margin-top:-40px;">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
 			      <span>Paris</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -155,7 +179,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
 			      <span>Londres</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -169,7 +193,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
 			      <span>New York</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -183,7 +207,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
 			      <span>Abidjan</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -197,7 +221,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
 			      <span>Sydney</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -211,7 +235,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/paysage.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/paysage.png' style='' border='0' alt=''>
 			      <span>Tokyo</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Supprimer</button>
@@ -232,7 +256,7 @@
           	<ul class="mdl-list">
 			  <li class="mdl-list__item mdl-list__item--three-line" style="margin-top:-40px;">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Peter</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -247,7 +271,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Jane</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -261,7 +285,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Malcolm</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -275,7 +299,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Dom</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -289,7 +313,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Cyril</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -303,7 +327,7 @@
 			  </li>
 			  <li class="mdl-list__item mdl-list__item--three-line">
 			    <span class="mdl-list__item-primary-content">
-			      <img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
+			      <img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
 			      <span>Jojo</span>
 			      
 			      <button style="" class="list_lieux_btn mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" type="button">Bannir</button>
@@ -322,80 +346,62 @@
           <div class="page-content">
           	<div class="mdl-tabs mdl-js-tabs mdl-js-ripple-effect">
 			  <div class="mdl-tabs__tab-bar">
-			      <a href="#starks-panel" style="width:50%;" class="mdl-tabs__tab is-active">Secteurs</a>
-			      <a href="#lannisters-panel" style="width:50%;" class="mdl-tabs__tab">Temps de Jeu</a>
+			      <a href="#classement-panel" style="width:50%;" class="mdl-tabs__tab">Classement</a>
+			      <a href="#zones-panel" style="width:50%;" class="mdl-tabs__tab is-active" onclick="getHistogram();">Zones Libres / Zones Occupées</a>
+			      <a href="#lannisters-panel" style="width:50%;" class="mdl-tabs__tab">Evolution de l'occupation</a>
 			  </div>
 			
-			  <div class="mdl-tabs__panel is-active" id="starks-panel">
-				<div id="container" style="height:75%;"></div>
+			  <div class="mdl-tabs__panel is-active" id="zones-panel">
+				<div id="containerZones" style="height:75%;"></div>
 			  </div>
 			  
 			  <div class="mdl-tabs__panel" id="lannisters-panel">
-				  <div id="container1" style="height:75%;"></div>
+				  <div id="container" style="height:75%;"></div>
 			  </div>
 			</div>
           	
           	<script>
           	
-	          	Highcharts.chart('container1', {
-				    chart: {
-				        type: 'area'
-				    },
-				    title: {
-				        text: 'Historic and Estimated Worldwide Population Growth by Region'
-				    },
-				    subtitle: {
-				        text: 'Source: Wikipedia.org'
-				    },
-				    xAxis: {
-				        categories: ['1750', '1800', '1850', '1900', '1950', '1999', '2050'],
-				        tickmarkPlacement: 'on',
-				        title: {
-				            enabled: false
-				        }
-				    },
-				    yAxis: {
-				        title: {
-				            text: 'Billions'
-				        },
-				        labels: {
-				            formatter: function () {
-				                return this.value / 1000;
-				            }
-				        }
-				    },
-				    tooltip: {
-				        split: true,
-				        valueSuffix: ' millions'
-				    },
-				    plotOptions: {
-				        area: {
-				            stacking: 'normal',
-				            lineColor: '#666666',
-				            lineWidth: 1,
-				            marker: {
-				                lineWidth: 1,
-				                lineColor: '#666666'
-				            }
-				        }
-				    },
-				    series: [{
-				        name: 'Asia',
-				        data: [502, 635, 809, 947, 1402, 3634, 5268]
-				    }, {
-				        name: 'Africa',
-				        data: [106, 107, 111, 133, 221, 767, 1766]
-				    }, {
-				        name: 'Europe',
-				        data: [163, 203, 276, 408, 547, 729, 628]
-				    }, {
-				        name: 'America',
-				        data: [18, 31, 54, 156, 339, 818, 1201]
-				    }, {
-				        name: 'Oceania',
-				        data: [2, 2, 2, 6, 13, 30, 46]
-				    }]
-				});
+          	    function getHistogram() {
+          	        var dataLibre = [null, null];
+          	        var dataOccupee = [null, null];
+          	        $.get(
+          	            "http://127.0.0.1:8090/histogram",
+          	            function (data) {
+          	                console.log(data.libre);
+          	                dataLibre[0] = data.libre;
+          	                dataOccupee[1] = data.occupee;
+          	                Highcharts.chart('containerZones', {
+				                chart: {
+				                    type: 'column'
+				                },
+				                title: {
+				                    text: 'Historic and Estimated Worldwide Population Growth by Region'
+				                },
+				                subtitle: {
+				                    text: 'Source: Wikipedia.org'
+				                },
+				                xAxis: {
+				                    title: {
+				                        text: 'Dénombrement'
+				                    }
+				                },
+				                yAxis: {
+				                    title: {
+				                        text: 'Nombre'
+				                    }
+				                },
+				                series: [
+                                    /* this is the "dummy" series
+                                       set the "showInLegend" and "enableMouseTracking" attributes 
+                                       to "false" to prevent user interaction */
+                                    { name: 'Zones Libres', color: '#00FF00', data: dataLibre }, 
+                                    { name: 'Zones Occupées', color: 'red', data: dataOccupee }
+                                ]
+				            });
+          	            }, "json"
+          	        );
+				}
           	
           		Highcharts.chart('container', {
 			
@@ -465,46 +471,50 @@
           </div>
         </section>
       </main>
-    </div>
-  </body>
-</html>
-
-	
-<!--POPUP ACHAT LIEU -->	
-	
-	<div id="oModal1" class="oModal1" style="overflow-y:none;display:none;z-index:175;pointer-events: all;">
+      <!--POPUP ACHAT LIEU -->
+    <div id="oModal1" class="oModal1" style="overflow-y:none;display:none;pointer-events: all;">
 		<div style="border-radius:4px;">
-			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone" style="overflow-y:hidden;max-height:500px;">
+			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone" style="overflow-y:hidden;">
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone">
-					<div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-phone" style="float:left;width:40%;padding-top:30px;">
-						<img  class='article-image' src='/View/Images/utilisateur.png' style='' border='0' alt=''>
+					<div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-phone">
+						<img  class='article-image' src='Images/utilisateur.png' style='' border='0' alt=''>
 					</div>
-					<div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-phone" style="float:right;width:40%;font-size:20px;padding-top:30px;">
-						<span>Nom du lieu</span>
-							<br/><br/><br/>
-						<span>Adresse du lieu</span>
+					<div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-phone" style="float:left;width:40%;font-size:20px;padding-top:30px;">
+						<div class="mdl-textfield mdl-js-textfield">
+							<input class="mdl-textfield__input" type="text" id="nom_lieu" />
+							<label class="mdl-textfield__label" for="nom_lieu">Nom du lieu</label>
+						</div>
+						<div>
+						    <span id="adresse">Adresse du lieu</span>
+						</div>
 					</div>
 				</div>
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
-					<img  class='article-image' src='/View/Images/paysage_grand.png' style='margin:auto;' border='0' alt=''>
+					<div class="mdl-textfield mdl-js-textfield">
+						<input class="mdl-textfield__input" type="text" id="descriptif" />
+						<label class="mdl-textfield__label" for="descriptif">Descriptif</label>
+					</div>
 				</div>
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
-					<span>Info du lieu</span>
+					<span>Coût du lieu : </span><input type="number" id="cout" value="100" min="1" />
 				</div>
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
-					<span>Solde actuel / Cout du lieu</span>
+					<span>Gain du lieu : </span><input type="number" id="gain" value="10" min="1" />
 				</div>
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
-					<span>reste apres achat</span>
+					<span>Rayon du lieu : </span><input type="number" id="rayon" value="50" min="1" />
 				</div>
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone">
 					<div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-phone" style="float:left;padding-top:30px;text-align:center;">
 						<button type="button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="document.getElementById('oModal1').style.display = 'none';" style="border: solid 1px #0089c2;padding:0;margin:auto;width:144px;height:40px;color: #0089c2;;text-align:center;background-color: white;border-radius: 4px;">Annuler</button>
 					</div>
 					<div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-phone" style="float:right;font-size:20px;padding-top:30px;text-align:center;">
-						<button type="button" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" onclick="document.getElementById('oModal1').style.display = 'none';" style="border: solid 1px #0089c2;padding:0;margin:auto;width:144px;height:40px;color: #0089c2;;text-align:center;background-color: white;border-radius: 4px;">Activer</button>
+						<button type="button" id="ajouter_lieu" onclick="ajoutlieu();" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect" style="border: solid 1px #0089c2;padding:0;margin:auto;width:144px;height:40px;color: #0089c2;;text-align:center;background-color: white;border-radius: 4px;">Ajouter</button>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
+    </div>
+  </body>
+</html>	

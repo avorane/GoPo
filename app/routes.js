@@ -4,22 +4,42 @@ module.exports = function(app, passport, model, io) {
     var zone_utilisateur_present = {};
 
     // =====================================
-    // HOME PAGE (with login links) ========
+    // Partie utilisateur ========
     // =====================================
     app.get('/login', function(req, res, next) {
     	console.log('Je suis la page login et je suis appele');
         res.sendFile(__dirname + '/View/Acceuil.html');
     });
     
-    app.post('/login', passport.authenticate('local-signin', {
-            successRedirect: '/index',
-            failureRedirect: '/login'
-        }));
+    app.post('/login', function(req, res, next) {
+        passport.authenticate('local-signin', function(err, user, info) {
+            if (err) { 
+                return next(err); 
+            }
+            if (!user) { 
+                return res.redirect('/login'); 
+            }
+            req.logIn(user, function(err) {
+              if (err) { 
+                return next(err); 
+              }
+              if (user.type_utilisateur == 1) {
+                return res.redirect('/admin');
+              } else if (user.type_utilisateur == 2) {
+                return res.redirect('/index');
+              }
+            });
+        })(req, res, next);
+    });
         
     app.get('/data', function(req, res, next) {
         model.utilisateur.findOne({where: {id_utilisateur: req.user.id_utilisateur}}).then(user => {
             res.json(user);
         });
+    });
+    
+    app.get('/admin', isLogged, function(req, res, next) {
+        res.sendFile(__dirname + '/View/Index_admin.html');
     });
        
     app.get('/index', isLogged, function(req, res, next) {
@@ -38,6 +58,12 @@ module.exports = function(app, passport, model, io) {
     	});
     	console.log(req.user.id_utilisateur);
     })
+    
+    app.get('/stats', function(req, res, next) {
+        model.sequelize.query('CALL stats(:id_user)', {replacements: {id_user: req.user.id_utilisateur}}).then(r => {
+            res.json(r);
+        });
+   });
     
     app.put('/vendre', function(req, res, next) {
     	console.log(req.body);
@@ -116,7 +142,12 @@ module.exports = function(app, passport, model, io) {
 	                                    zone_utilisateur_present[data.id] = zone.id_zone;
 	                                    var key = zone.id_zone;
 	                                    locked_zones_utilisateur[data.id]= {key: temps};
-	                                    console.log("connected : " + io.sockets.connected);
+	                                    var passage = model.passage.build({
+	                                        id_utilisateur_proprietaire: id_utilisateur_credite,
+	                                        id_utilisateur_passe: data.id,
+	                                        id_zone: zone.id_zone,
+	                                        date_passage: Date.now()
+	                                    }).save();
 	                                    for (var socket_id of Object.keys(io.sockets.sockets)) {
 	                                        var socket_user = io.sockets.connected[socket_id];
 	                                        if (socket_user.userId == id_utilisateur_credite) {
@@ -141,6 +172,48 @@ module.exports = function(app, passport, model, io) {
         	
         });
     });
+    
+     // =====================================
+    // Partie administrateur ========
+    // =====================================
+    
+    app.put('/ajoutlieu', function(req, res, next) {
+    console.log(req.body.latitude);
+    console.log(req.body.longitude);
+    console.log(req.body.rayon);
+        model.sequelize.query('CALL list_lieux_meme_zone(:lat, :lng, :ray)', {replacements: {lat: parseFloat(req.body.latitude), lng: parseFloat(req.body.longitude), ray: req.body.rayon}}).then(r => {
+            console.log(r.length);
+            if (r.length == 0) {
+                model.zone.build({
+                    latitude: req.body.latitude,
+                    longitude: req.body.longitude,
+                    rayon: req.body.rayon,
+                    valeur: req.body.valeur,
+                    libelle: req.body.libelle,
+                    description: req.body.description,
+                    gain: req.body.gain,
+                    dateCreation: Date.now()
+               }).save();
+               res.send(200);
+           }
+       });
+    });
+    
+    app.get('/histogram', function(req, res, next) {
+        var libres = 0;
+        var occupees = 0;
+        model.zone.findAndCountAll({where: {id_utilisateur: null}}).then(r => {
+            console.log(r.count);
+            libres = r.count;
+            model.zone.findAndCountAll({where: {id_utilisateur: {[model.Sequelize.Op.not]: null}}}).then(r => {
+                console.log(r.count);
+                occupees = r.count;
+                console.log(libres + "     " + occupees);
+                res.json({libre: libres, occupee: occupees});
+            });
+        });
+    });
+        
     
     function radians(degree) {
         return degree * (Math.PI / 180);

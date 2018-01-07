@@ -30,7 +30,7 @@
       </header>
       <div class="mdl-layout__drawer" style="height:50%;margin-top:14%;">
         <nav class="mdl-navigation">
-          <a class="mdl-navigation__link" onclick="document.getElementById('oModal6').style.display = 'block';"><img  class='article-image' src='/View/Images/statistiques.png' style='width:30px;height:30px;margin-right:10px;' border='0' alt=''>Statistiques</a>
+          <a class="mdl-navigation__link" onclick="get_stats();"><img  class='article-image' src='/View/Images/statistiques.png' style='width:30px;height:30px;margin-right:10px;' border='0' alt=''>Statistiques</a>
           <a class="mdl-navigation__link" id="sortPlayers"><img  class='article-image' src='/View/Images/classement.png' style='width:30px;height:30px;margin-right:10px;margin-right:10px;' border='0' alt=''>Classement</a>
           <a class="mdl-navigation__link" id="getZones"><img  class='article-image' src='/View/Images/mes_lieux.png' style='width:30px;height:30px;margin-right:10px;' border='0' alt=''>Mes lieux</a>
           <a class="mdl-navigation__link" onclick="document.getElementById('oModal4').style.display = 'block';"><img  class='article-image' src='/View/Images/deconnexion.png' style='width:30px;height:30px;margin-right:10px;' border='0' alt=''>Deconnexion</a>
@@ -254,6 +254,23 @@
 					}, "json");
 				}
 				
+				function get_stats() {
+				    $("#oModal6").show();
+				    $("#stats").empty();
+				    $.get("http://127.0.0.1:8090/stats",
+				        function(data) {
+				            $.each(data, function(key, value) {
+				                $("#stats").append("<tr>");
+				                $("#stats").append("<th>" + value.libelle + "</th>");
+				                $("#stats").append("<th></th>");
+				                $("#stats").append("<th>" + value.gain + "</th>");
+				                $("#stats").append("<th>" + value.nbr_passage + "</th>");
+				                $("#stats").append("<th>" + value.gain_total + "</th>");
+				                $("#stats").append("</tr>");
+				            });
+                        }, "json");
+				}
+				
 				function acheterLieu(id_lieu) {
 					$.ajax({
 						url: "http://127.0.0.1:8090/acheter",
@@ -324,27 +341,16 @@
 		<div style="border-radius:4px;">
 			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone">
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone">
-					<table id="stats" class="striped">
+					<table class="striped">
 					    <thead>
 					        <th>Nom lieu</th>
 					        <th>Date acquisition</th>
+					        <th>Gain par passage</th>
 					        <th>Nombre de passages</th>
 					        <th>Gain total</th>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>Hasard</td>
-                                <td>12 mai 2017</td>
-                                <td>15</td>
-                                <td>150</td>
-                           </tr>
-                            <tr>
-                                <td>Hasard</td>
-                                <td>12 mai 2017</td>
-                                <td>15</td>
-                                <td>150</td>
-                           </tr>
-                       </tbody>
+                        <tbody id="stats">
+                        </tbody>
                     </table>
 				</div>
 				<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
