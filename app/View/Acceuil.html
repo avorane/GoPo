@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+   	<title>GOPO</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge; charset=utf-8" />
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <!-- modifié par nicolas : racine des modules de node dans le repertoire node_modules donc plus besoin de commencer les chemins par ../node_modules -->
+    <link rel="stylesheet" href="/node_modules/material-design-lite/material.min.css">
+    <script src="/node_modules/material-design-lite/material.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <!-- fin des modifications -->
+
+    <style>
+		.mdl-layout {
+			align-items: center;
+		  	justify-content: center;
+		}
+		.mdl-layout__content {
+			padding: 8px;
+			flex: none;
+		}
+		body {
+		  background: radial-gradient(1.5em 6.28571em at 1.95em, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.25) 55%, rgba(255, 255, 255, 0) 55%) 0 0, radial-gradient(1.5em 6.28571em at -0.45em, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.25) 55%, rgba(255, 255, 255, 0) 55%) 1.5em 5.5em, radial-gradient(2.3em 4.57143em at 2.99em, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.3) 55%, rgba(255, 255, 255, 0) 55%) 0 0, radial-gradient(2.3em 4.57143em at -0.69em, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.3) 55%, rgba(255, 255, 255, 0) 55%) 2.3em 4em, radial-gradient(3.5em 6.28571em at 4.55em, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.25) 55%, rgba(255, 255, 255, 0) 55%) 0 0, radial-gradient(3.5em 6.28571em at -1.05em, rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.25) 50%, rgba(255, 255, 255, 0.25) 55%, rgba(255, 255, 255, 0) 55%) 3.5em 5.5em, radial-gradient(#15ffa5, #00ced1);
+		  background-color: mediumspringgreen;
+		  background-size: 1.5em 11em, 1.5em 11em, 2.3em 8em, 2.3em 8em, 3.5em 11em, 3.5em 11em, 100% 100%;
+		  background-repeat: repeat;
+		}
+	</style>
+	
+  </head>
+	<body>
+		<div class="mdl-layout mdl-js-layout mdl-color--grey-100">
+			<main class="mdl-layout__content">
+				<div class="mdl-card mdl-shadow--6dp">
+					<div class="mdl-card__title mdl-color--primary mdl-color-text--white">
+						<h2 class="mdl-card__title-text">GOPO</h2>
+					</div>
+					<form action="/login" method="post">
+				  		<div class="mdl-card__supporting-text">
+								<div class="mdl-textfield mdl-js-textfield">
+									<input class="mdl-textfield__input" type="text" id="username" name="username" />
+									<label class="mdl-textfield__label" for="username">Username</label>
+								</div>
+								<div class="mdl-textfield mdl-js-textfield">
+									<input class="mdl-textfield__input" type="password" id="userpass" name="password" />
+									<label class="mdl-textfield__label" for="userpass">Password</label>
+								</div>
+
+						</div>
+						<div class="mdl-card__actions mdl-card--border">
+							<button type="submit" class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" style="float:left;">Log in</button>
+	
+							<button class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" style="float:right;">Forgot Password</button>
+						</div>
+					</form>
+				</div>
+			</main>
+		</div>
+	</body>
+</html>

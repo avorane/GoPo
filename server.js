@@ -8,6 +8,7 @@ var passport = require('passport');
 var session = require('express-session');
 var bodyParser = require('body-parser');
 var pem = require('pem');
+var io = require('socket.io');
 
 app.use('/', express.static(__dirname));
 
@@ -40,7 +41,10 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+io = io.listen(server);
+
 require('./app/Controler/passport.js')(passport, models.utilisateur);
-require('./app/routes.js')(app, passport, models);
+require('./app/routes.js')(app, passport, models, io);
+
 server.listen(8090);
 //https.createServer(options, app).listen(8090, function() {console.log('Je suis securise');});

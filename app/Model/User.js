@@ -20,7 +20,7 @@ module.exports = function(sequelize, Sequelize) {
 	credit: {
 		type: Sequelize.INTEGER
 	},
-	id_type_utilisateur: {
+	type_utilisateur: {
 		type: Sequelize.INTEGER,
 		references: {
 			model: "type_utilisateur",

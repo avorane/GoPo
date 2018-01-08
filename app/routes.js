@@ -213,6 +213,24 @@ module.exports = function(app, passport, model, io) {
             });
         });
     });
+    
+    app.get('/stat_achat_zone', function(req, res, next) {
+        model.sequelize.query('CALL ps_statistique_achat_zone(:typeactionsql)', {replacements: {typeactionsql: 'A'}}).then(r => {
+            res.json(r);
+        });
+    });
+    
+    app.get('/players_admin', isLogged, function(req, res, next) {
+    	model.utilisateur.findAll({order: [['credit', 'DESC']]}).then(lieux => {
+    		res.json({zones: lieux});
+    	});
+    });
+    
+    app.get('/zones_admin', isLogged, function(req, res, next) {
+    	model.zone.findAll({order: [['valeur', 'DESC']]}).then(users => {
+    		res.json({players: users});
+    	});
+    });
         
     
     function radians(degree) {
