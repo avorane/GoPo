@@ -45,6 +45,9 @@
         width: 345px;
       }
       
+      .none {
+    	display: none;
+      }
 /* STYLES GENERAUX */
 
 	#map {
@@ -62,7 +65,7 @@
 	
 	.list_lieux_btn{
 		float:right;
-		margin-right: 50px;
+		margin-right: 40px;
 		border: solid 1px #0089c2;
 		height: 40px;
 		width: 150px;

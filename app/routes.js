@@ -1,17 +1,29 @@
 module.exports = function(app, passport, model, io) {
+	
+	//imports
+	var formidable = require('formidable');
+	var fs = require('fs');
+	var path = require('path');
 
+	//deux tableaux servant à stocker des données de présences des joueurs dans une zone pour ne pas créditer chaque seconde le propriétaire
     var locked_zones_utilisateur = {};
     var zone_utilisateur_present = {};
+    
+    //variable qui stocke l'id d'une zone créée pour renommer des fichiers uploadés avec l'id de la zone
+    var id_zone_added = 0;
 
     // =====================================
     // Partie utilisateur ========
     // =====================================
+    
+    //accès à la page de login
     app.get('/login', function(req, res, next) {
-    	console.log('Je suis la page login et je suis appele');
-        res.sendFile(__dirname + '/View/Acceuil.html');
+        res.sendFile(__dirname + '/View/login.html');
     });
     
+    //redirection de l'utilisateur après validation du login selon son type utilisateur (1 = admin, 2 = simple utilisateur)
     app.post('/login', function(req, res, next) {
+    	//passport utilise la règle de signin définie dans le fichier passport.js
         passport.authenticate('local-signin', function(err, user, info) {
             if (err) { 
                 return next(err); 
@@ -26,59 +38,124 @@ module.exports = function(app, passport, model, io) {
               if (user.type_utilisateur == 1) {
                 return res.redirect('/admin');
               } else if (user.type_utilisateur == 2) {
-                return res.redirect('/index');
+                return res.redirect('/');
               }
             });
         })(req, res, next);
     });
-        
-    app.get('/data', function(req, res, next) {
-        model.utilisateur.findOne({where: {id_utilisateur: req.user.id_utilisateur}}).then(user => {
-            res.json(user);
-        });
+    
+    //un utilisateur créé un compte
+    app.post('/signup', function(req, res, next) {
+        passport.authenticate('local-signup', function(err, user, info) {
+            if (err) { 
+                return next(err); 
+            }
+            if (!user) { 
+                return res.redirect('/login'); 
+            }
+            req.logIn(user, function(err) {
+              if (err) { 
+                return next(err); 
+              }
+              res.json({resirect: 'index'});
+            });
+       })(req, res, next);
     });
     
+    //on ferme la session
+    app.post('/logout', function(req, res, next) {
+        req.logout();
+        res.send(200);
+    });
+    
+    //on se connecte ne admin so on a les droits
     app.get('/admin', isLogged, function(req, res, next) {
-        res.sendFile(__dirname + '/View/Index_admin.html');
-    });
-       
-    app.get('/index', isLogged, function(req, res, next) {
-		res.sendFile(__dirname + '/View/Index.html');
-    });
-    
-    app.get('/players', isLogged, function(req, res, next) {
-    	model.utilisateur.findAll({order: [['credit', 'DESC']]}).then(users => {
-    		res.json({players: users});
-    	});
-    });
-    
-    app.get('/zones', isLogged, function(req, res, next) {
-    	model.zone.findAll({where: {id_utilisateur: req.user.id_utilisateur}}).then(zones => {
-    		res.json(zones);
-    	});
-    	console.log(req.user.id_utilisateur);
+    	if (req.user.type_utilisateur == 1) {
+    		res.sendFile(__dirname + '/View/admin.html');
+    	} else {
+    		res.status(401);
+    		res.sendFile(__dirname + '/View/login.html');
+    	}
     })
     
-    app.get('/stats', function(req, res, next) {
-        model.sequelize.query('CALL stats(:id_user)', {replacements: {id_user: req.user.id_utilisateur}}).then(r => {
-            res.json(r);
-        });
-   });
+    //on transmet à l'utilisateur des informations le concenant afin de faciliter le traitement côté utilisateur, notamment avec les sockets    
+    app.get('/data', function(req, res, next) {
+    	if (req === undefined) {
+	    	//on récupére grâce à l'ORM sequelize les infos de l'utilisateur qui nous transmet la requête. Son id est connu gâce à passport
+	        model.utilisateur.findOne({where: {id_utilisateur: req.user.id_utilisateur}}).then(user => {
+	        	res.status(200);
+	            res.json(user);
+	        }).catch(function(err) {
+	        	//en cas d'erreur on retourne le code 400 avec un message
+	        	res.status(400);
+	        	res.json({message: 'La récupération des données de l\'utilisateur ne s\'est pas effectuée correctement'});
+	        });
+    	} else {
+    		res.status(400);
+    		res.json({message: 'La requête vers le serveur n\'est pas correcte'});
+    	}
+    });
     
-    app.put('/vendre', function(req, res, next) {
-    	console.log(req.body);
-    	model.zone.findOne({where: {id_zone: req.body.id_zone, id_utilisateur: req.user.id_utilisateur}}).then(zone => {
-    	    var gain = zone.gain;
-    		model.utilisateur.findOne({where: {id_utilisateur: req.user.id_utilisateur}}).then(user => {
-    		    var nouveau_credit = user.credit + 0.75 * zone.valeur;
-    		    user.update({credit: nouveau_credit});
-    		    io.sockets.emit('zone_vendu', zone);
-    		    res.json({credit: user.credit});
-    		});
-    		zone.update({id_utilisateur: null});
+    //on accède à l'application si l'on est logué, sinon on est redirigé par la fonction isLogged vers la page login
+    app.get('/', isLogged, function(req, res, next) {
+    	model.utilisateur.findOne({where: {id_utilisateur: req.user.id_utilisateur}}).then(user => {
+    		if (user.type_utilisateur == 1) {
+    			res.sendFile(__dirname + '/View/admin.html');
+    		} else if (user.type_utilisateur == 2) {
+    			res.sendFile(__dirname + '/View/index.html')
+    		}
+    	})
+        
+    });
+    
+    //donne le classement des joueurs
+    app.get('/players', function(req, res, next) {
+    	model.utilisateur.findAll({order: [['credit', 'DESC']]}).then(users => {
+    		res.status(200);
+    		res.json({players: users});
+    	}).catch(err => {
+    		res.status(400);
+    		res.json({message: 'La requête vers le serveur n\'est pas correcte'});
     	});
     });
     
+    
+    //donne la liste des zones possédées par le joueur qui fait la demande
+    app.get('/zones', function(req, res, next) {
+    	model.zone.findAll({where: {id_utilisateur: req.user.id_utilisateur}}).then(zones => {
+    		res.status(200);
+    		res.json(zones);
+    	}).catch(err => {
+    		res.status(400);
+    		res.json({message: 'La requête vers le serveur n\'est pas correcte'});
+
+    	});
+    });
+    
+	//donne les stats sur les zones d'un joueur (le nombre de passage des autres joueurs dans chacune des zones qu'il possède)
+	app.get('/stats', function(req, res, next) {
+		model.sequelize.query('CALL stats(:id_user)', {replacements: {id_user: req.user.id_utilisateur}}).then(r => {
+			res.status(200);
+			res.json(r);
+		}).catch(err => {
+			res.status(400);
+			res.json({message: 'La requête vers le serveur n\'est pas correcte'});
+		});
+	});
+    
+	app.put('/vendre', function(req, res, next) {
+	model.zone.findOne({where: {id_zone: req.body.id_zone, id_utilisateur: req.user.id_utilisateur}}).then(zone => {
+		var gain = zone.gain;
+		model.utilisateur.findOne({where: {id_utilisateur: req.user.id_utilisateur}}).then(user => {
+			var nouveau_credit = user.credit + 0.75 * zone.valeur;
+			user.update({credit: nouveau_credit});
+			io.sockets.emit('zone_vendu', zone);
+			res.json({credit: user.credit});
+			});
+			zone.update({id_utilisateur: null});
+		});
+	});
+
     app.put('/acheter', function(req, res, next) {
     	console.log(req.body);
     	var cout = 0;
@@ -107,7 +184,6 @@ module.exports = function(app, passport, model, io) {
     
     function isLogged(req, res, next) {
     	if (req.isAuthenticated()) {
-    		console.log('Je ne suis pas authentifie');
     		return next();
     	}
     	res.redirect('/login')
@@ -175,7 +251,7 @@ module.exports = function(app, passport, model, io) {
     
      // =====================================
     // Partie administrateur ========
-    // =====================================
+    // ======================================
     
     app.put('/ajoutlieu', function(req, res, next) {
     console.log(req.body.latitude);
@@ -193,11 +269,20 @@ module.exports = function(app, passport, model, io) {
                     description: req.body.description,
                     gain: req.body.gain,
                     dateCreation: Date.now()
-               }).save();
-               res.send(200);
+               }).save().then(zone_added => {
+               		id_zone_added = zone_added.id_zone;
+               		res.status(200);
+            		res.json({message: 'La zone ' + req.body.libelle + ' a été correctement ajouté'});
+               });
            }
        });
     });
+    
+    app.get('/admin_zones', function(req, res, next) {
+    	model.zone.findAll({where: {isActif: true}}).then(zones => {
+    		res.json(zones);
+    	})
+    })
     
     app.get('/histogram', function(req, res, next) {
         var libres = 0;
@@ -220,16 +305,51 @@ module.exports = function(app, passport, model, io) {
         });
     });
     
+     app.get('/stat_classement_players', function(req, res, next) {
+        model.sequelize.query('CALL ps_statistique_users(:nombre_joueurs)', {replacements: {nombre_joueurs: 10}}).then(r => {
+            res.json(r);
+        });
+    });
+    
     app.get('/players_admin', isLogged, function(req, res, next) {
-    	model.utilisateur.findAll({order: [['credit', 'DESC']]}).then(lieux => {
-    		res.json({zones: lieux});
+    	model.utilisateur.findAll({order: [['credit', 'DESC']]}).then(users => {
+    		res.json({players: users});
     	});
     });
     
     app.get('/zones_admin', isLogged, function(req, res, next) {
-    	model.zone.findAll({order: [['valeur', 'DESC']]}).then(users => {
-    		res.json({players: users});
+    	model.zone.findAll({order: [['valeur', 'DESC']]}).then(lieux => {
+    		res.json({zones: lieux});
     	});
+    });
+    
+    app.put('/gest_zones', function(req, res, next) {
+		model.zone.findOne({where: {id_zone: req.body.id_zone}}).then(zone => {
+			zone.update({isActif: req.body.etat});
+			zone.update({perimetre: req.body.perimetre});
+			zone.update({gain: req.body.gain});
+			zone.update({valeur: req.body.valeur});
+			res.json(zone);
+		});
+    });
+    
+    app.put('/gest_users', function(req, res, next) {
+        model.utilisateur.findOne({where: {id_utilisateur: req.body.id_user}}).then(utilisateur => {
+			utilisateur.update({banni: !utilisateur.banni});
+			res.json(utilisateur);
+		});
+    });
+    
+    app.post('/upload', function(req, res, next) {
+    	 var form = new formidable.IncomingForm();
+    	 form.parse(req, function (err, fields, files) {
+    	 	var oldpath = files.file.path;
+    		var newpath = __dirname + '/View/Images/lieux/' + id_zone_added + path.extname(files.file.name);
+    		fs.rename(oldpath, newpath, function (err) {
+	        	if (err) throw err;
+		        res.send(200);
+    		});
+    	 });
     });
         
     

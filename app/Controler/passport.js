@@ -10,14 +10,11 @@ module.exports = function(passport, utilisateur) {
     },
     function(req, login, password, done) {
         var Utilisateur = utilisateur;
-        console.log('Je suis appele');
-        console.log('Pssw: ' + password);
         Utilisateur.findOne({
             where: {
                 pseudo: login
             }
         }).then(function(utilisateur) {
-        	console.log(utilisateur.mot_de_passe);
             if (!utilisateur) {
             	console.log('Aucun Utilisateur');
                 return done(null, false, {
@@ -34,14 +31,51 @@ module.exports = function(passport, utilisateur) {
         }).catch(function(err) {
             console.log("Error:", err);
             return done(null, false, {
-                message: 'Something went wrong with your Signin'
+                message: 'Erreur sur le login'
+            });
+        });
+    }
+	));
+	
+	passport.use('local-signup', new LocalStrategy({
+        usernameField: 'username',
+        passwordField: 'password',
+        passReqToCallback: true
+    },
+    function(req, login, password, done) {
+        var Utilisateur = utilisateur;
+        Utilisateur.findOne({
+            where: {
+                pseudo: login
+            }
+        }).then(utilisateur => {
+            if (utilisateur != null) {
+            	console.log('Utilisateur déjà existant');
+                return done(null, false, {
+                    message: 'Cet utilisateur déjà'
+                });
+            }
+            Utilisateur.build({
+                pseudo: login,
+                mot_de_passe: password,
+                credit: 30,
+                type_utilisateur: 2,
+                dateCreation: Date.now(),
+                banni: false
+            }).save().then(user => {
+                var userinfo = user.get();
+                return done(null, userinfo);
+            });
+        }).catch(function(err) {
+            console.log("Error:", err);
+            return done(null, false, {
+                message: 'Erreur sur le signup'
             });
         });
     }
 	));
 	
 	passport.serializeUser(function(user, done) {
-		console.log(user.id_utilisateur);
     	done(null, user.id_utilisateur);
 	});
 	

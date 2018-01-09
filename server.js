@@ -12,25 +12,20 @@ var io = require('socket.io');
 
 app.use('/', express.static(__dirname));
 
-var options = {
-  key: fs.readFileSync('./keys/gopo.key', 'utf8'),
-  cert: fs.readFileSync('./keys/gopo.crt', 'utf8'),
-  requestCert: false
-};
-
 models.sequelize.sync().then(function() {
  
-    console.log('Nice! Database looks fine')
+    console.log('La base de données est OK!')
  
 }).catch(function(err) {
  
-    console.log(err, "Something went wrong with the Database Update!")
+    console.log(err, "Une erreur s\'est produite pendant la mise en place de la base de données!")
  
 });
 
 app.use(bodyParser.urlencoded({
     extended: true
 }));
+
 app.use(bodyParser.json());
 
 app.use(session({
@@ -38,6 +33,7 @@ app.use(session({
     resave: true,
     saveUninitialized: true
 }));
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -47,4 +43,3 @@ require('./app/Controler/passport.js')(passport, models.utilisateur);
 require('./app/routes.js')(app, passport, models, io);
 
 server.listen(8090);
-//https.createServer(options, app).listen(8090, function() {console.log('Je suis securise');});

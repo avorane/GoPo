@@ -20,6 +20,9 @@ module.exports = function(sequelize, Sequelize) {
 	credit: {
 		type: Sequelize.INTEGER
 	},
+	banni: {
+		type: Sequelize.INTEGER
+	},
 	type_utilisateur: {
 		type: Sequelize.INTEGER,
 		references: {

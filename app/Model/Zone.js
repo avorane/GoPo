@@ -26,7 +26,10 @@ module.exports = function(sequelize, Sequelize) {
 	gain: {
 		type: Sequelize.INTEGER
 	},
-	perimetre: {
+	rayon: {
+		type: Sequelize.INTEGER
+	},
+	isActif: {
 		type: Sequelize.INTEGER
 	},
 	dateCreation: {

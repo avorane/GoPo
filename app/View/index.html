@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>GOPO</title>
+		<meta http-equiv="X-UA-Compatible" content="IE=Edge; charset=utf-8" />
+		<meta name="mobile-web-app-capable" content="yes">
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		<link rel="stylesheet" href="node_modules/material-design-lite/material.min.css">
+		<link rel="stylesheet" href="node_modules/materialize-css/dist/css/materialize.css">
+		<script src="node_modules/jquery/dist/jquery.min.js"></script>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<script src="node_modules/materialize-css/dist/js/materialize.min.js"></script>
+		<link rel="stylesheet" href="/app/View/Styles_index.css">
+		<script src="/socket.io/socket.io.js"></script>
+	</head>
+	<body>
+		<header>
+			<nav>
+				<div class="nav-wrapper">
+					<img class="brand-logo" />
+					<span id="solde"></span>
+					<ul id="slide-out" class="side-nav">
+						<li>
+							<div class="row" onclick="get_stats();" data-target="modal-stats">
+								<div class="col s2">
+									<img class='responsive-image' src='/app/View/Images/statistiques.png'>
+								</div>
+								<div class="col s9 offset-s1">
+									<span class="black-text">Statistiques</span>
+								</div>
+							</div>
+						</li>
+						<li>
+							<div class="row" onclick="getListPlayers();">
+								<div class="col s2">
+									<img class='responsive-image' src='/app/View/Images/classement.png'>
+								</div>
+								<div class="col s9 offset-s1">
+									<span class="black-text">Classement</span>
+								</div>
+							</div>
+						</li>
+						<li>
+							<div class="row" onclick="getListZones();">
+								<div class="col s2">
+									<img class='responsive-image' src='/app/View/Images/mes_lieux.png'>
+								</div>
+								<div class="col s9 offset-s1">
+									<span class="black-text">Mes Lieux</span>
+								</div>
+							</div>
+						</li>
+				<li>
+				<div class="row" onclick="getListZones();">
+				<div class="col s2">
+				<img class='responsive-image' src='/app/View/Images/gestion.png'>
+				</div>
+				<div class="col s9 offset-s1">
+				<span class="black-text">Gestion de mon compte</span>
+				</div>
+				</div>
+				</li>
+				<li>
+				<div class="row" onclick="deconnexion();">
+				<div class="col s2">
+				<img class='responsive-image' src='/app/View/Images/deconnexion.png'>
+				</div>
+				<div class="col s9 offset-s1">
+				<span class="black-text">Déconnexion</span>
+				</div>
+				</div>
+				</li>
+				</ul>
+				<a data-activates="slide-out" class="button-collapse"><i class="material-icons">menu</i></a>
+				</div>
+			</nav>
+		</header>
+      <main>
+		    <div id="map"></div>
+		    <script>
+		        var carte;
+			    var mon_marqueur;
+			    var mon_id;
+			    var mon_credit;
+			    var mon_pseudo;
+			    var list_lieux_affiches = {};
+			    var socket;
+			    
+			    $.get("http://127.0.0.1:8090/data",
+			        function(data) {
+			            mon_id = data.id_utilisateur;
+			            mon_credit = data.credit;
+			            mon_pseudo = data.pseudo;
+			            $("#solde").text("Solde : " + mon_credit + " credits");
+			            socket = io.connect("http://127.0.0.1:8090", {query: "id=" + data.id_utilisateur});
+			            socket.on('zone_acquired', function(data) {
+				        console.log('zone achete par ' + data.id_utilisateur);
+				        if (list_lieux_affiches[data.id_zone] !== undefined) {
+				            var color = '#00FF00';
+					        if (data.id_utilisateur !== null) {
+						        if (data.id_utilisateur == mon_id) {
+							        color = '#0000FF';
+						        } else {
+							        color = '#FF0000';
+						        }
+					        }
+					        list_lieux_affiches[data.id_zone].zone = data;
+				            list_lieux_affiches[data.id_zone].area.setOptions({fillColor: color});
+				            add_listener_circle(list_lieux_affiches[data.id_zone].area, data);
+				       }
+		            });
+		            
+		            socket.on('zone_vendu', function(data) {
+		                console.log('zone ' + data.id_zone + ' vendu');
+				        if (list_lieux_affiches[data.id_zone] !== undefined) {
+				            var color = '#00FF00';
+					        list_lieux_affiches[data.id_zone].zone = data;
+				            list_lieux_affiches[data.id_zone].area.setOptions({fillColor: color});
+				            add_listener_circle(list_lieux_affiches[data.id_zone].area, data);
+				        }
+				        
+		            });
+		            
+		            socket.on('get_credit', function(data) {
+		                console.log('J\'ai reçu du crédit');
+		                mon_credit = data.credit;
+		                $("#solde").text("Solde : " + data.credit + " credits");
+		            });
+		            
+		            socket.on('give_zones', function(data) {
+				        $.each(data, function(key, value) {
+						     if (list_lieux_affiches[value.id_zone] === undefined) {
+							        var color = '#00FF00';
+							        if (value.id_utilisateur !== null) {
+								        if (value.id_utilisateur == mon_id) {
+									        color = '#0000FF';
+								        } else {
+									        color = '#FF0000';
+								        }
+							        }
+							        var latlng = new google.maps.LatLng(value.latitude, value.longitude);
+							        var circle = new google.maps.Circle({
+                    				center: latlng,
+                    				map: carte,
+                    				radius: value.rayon,          // IN METERS.
+                    				fillColor: color,
+                    				fillOpacity: 0.5,
+                    				strokeColor: "#FFF",
+                    				strokeWeight: 0         // DON'T SHOW CIRCLE BORDER.
+                				});
+                				add_listener_circle(circle, value);
+							    list_lieux_affiches[value.id_zone] = {zone: value, area: circle};
+						     }
+					
+				        });
+				        $.each(list_lieux_affiches, function(key_to_delete, value_to_delete) {
+				            var to_delete = true
+				            $.each(data, function(key, value) {
+				                if (key_to_delete == value.id_zone) {
+				                    to_delete = false;
+				                }
+				            });
+				            if (to_delete) {
+				                value_to_delete.area.setMap(null);
+				                delete list_lieux_affiches[key_to_delete];
+				            }
+				       });
+				    });
+				
+			    });
+			    
+				function geo_ok(position) {
+					var latitude = position.coords.latitude;
+					var longitude = position.coords.longitude;
+					position = {lat: latitude, lng: longitude};
+				}
+				
+				function geo_error(error) {
+					alert(error.message+" / "+error.code);	 
+				}
+
+				function geo() {
+					if(navigator.geolocation){
+						navigator.geolocation.getCurrentPosition(geo_ok,
+							geo_error, 
+							{ enableHighAccuracy:true, maximumAge:10000, timeout:10000}
+						);
+					} else {
+						alert('Erreur : pas de support de la géolocalisation dans votre navigateur');
+					}
+				}
+			
+			function initMap() {
+				if (navigator.geolocation) {
+					navigator.geolocation.getCurrentPosition(set_position, set_position_error, {enableHighAccuracy:true, maximumAge:5000, timeout:5000});			
+				} else {
+					alert('Pas de support de la géolocalisation');
+				}				
+			}
+			
+			function mouvement_marqueur() {
+				if (navigator.geolocation) {
+					navigator.geolocation.getCurrentPosition(update_position, update_position_error, {enableHighAccuracy:true, maximumAge:5000, timeout:5000});				
+				} else {
+					alert('Pas de support de la géolocalisation');
+				}					
+			}
+			
+			function update_position(position) {
+			    if (mon_marqueur != undefined) {	
+					var new_lat = position.coords.latitude;
+					var new_long = position.coords.longitude;
+					mon_marqueur.setPosition(new google.maps.LatLng(new_lat, new_long));
+					if (socket !== undefined) {
+					    get_zones_by_server(new_lat, new_long);
+					}				
+			    } else {
+			        set_position(position);
+			    }
+			}
+			
+			function update_position_error() {
+				alert('erreur!');
+			}
+			
+			function set_position(position) {
+				latitude = position.coords.latitude;
+				longitude = position.coords.longitude;
+				//var latlng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+				var latlng = new google.maps.LatLng(latitude, longitude);
+				var options = {
+					center: latlng,
+					zoom: 13,
+					gestureHandling: 'greedy',
+					mapTypeId: google.maps.MapTypeId.SATELLITE
+				};
+				
+				if (carte === undefined) {
+					carte = new google.maps.Map(document.getElementById("map"), options);
+				}
+				mon_marqueur = new google.maps.Marker(
+				 { 
+					position: latlng, 
+					title: mon_pseudo
+				});
+				mon_marqueur.setMap(carte);
+				setInterval(mouvement_marqueur, 5000);
+				if (socket !== undefined) {
+				    get_zones_by_server(latitude, longitude);
+				}
+			}
+			
+			function set_position_error(error) {
+				alert(error.message);
+			}
+				
+				function getListPlayers() {
+				    $(".button-collapse").sideNav("hide");
+					$("#modal-classement").modal('open');
+					$.get("http://127.0.0.1:8090/players",
+						function(data) {
+							sortListPlayers(data);
+						},
+						"json"
+					);
+				}
+				
+				function sortListPlayers(data) {
+					$("#listPlayers").empty();
+					var position = 1;
+					$.each(data['players'], function(key, value) {
+						$('#listPlayers').append('<li class="collection-item avatar"><i class="material-icons circle green">insert_chart</i><span class="title">' + value.pseudo + '</span><p>Position : ' + position + '</p></li>');
+						if (value.id_utilisateur == mon_id) {
+						    $("#listPlayers").prepend('<li class="collection-header"><h4>Mon classement : ' + position + '</h4></li>');
+						}
+						position += 1;
+					});
+				}
+				
+				function getListZones() {
+				    $(".button-collapse").sideNav("hide");
+					$.get("http://127.0.0.1:8090/zones",
+					function(data) {
+						$("#countLieux").empty();
+						$("#listLieux").empty();
+						$("#listLieux").append('<li class="collection-header"><h4>Vous avez ' + data.length + ' lieux</h4></li>');
+						$.each(data, function(key, value) {
+						    var path_image = "/app/View/Images/lieu_inconnu.png";
+					        if (value.path_image != null) {
+					            path_image = value.path_image;
+					        }
+							$("#listLieux").append('<li class="collection-item" id="lieu_' + value.id_zone + '"><div class="row"><div class="col s2"><img class="responsive-img" src="' + path_image + '" /></div><div class="col s8"><span class="title">' + value.libelle + '</span><p>Valeur à la vente : ' + 0.75 * value.valeur + '</p></div><div class="col s2"><a class="secondary-content" onclick="vendreLieu('+ value.id_zone + ');">Vendre</a></div></div></li>');
+						});
+					}, "json");
+					$("#modal-gestion-lieux").modal('open');
+				}
+				
+				function vendreLieu(id_lieu) {
+					$.ajax({
+						url: 'http://127.0.0.1:8090/vendre',
+						type: 'PUT',
+						data: {id_zone: id_lieu},
+						success: function(data) {
+						    mon_credit = data.credit;
+							$('#lieu_' + id_lieu).remove();
+							$("#solde").text("Solde : " + data.credit + " credits");
+							getListZones();
+						}
+					});
+				}
+				
+				function get_stats() {
+				    $(".button-collapse").sideNav("hide");
+				    $("#modal-stats").modal('open');
+				    $("#stats").empty();
+				    $.get("http://127.0.0.1:8090/stats",
+				        function(data) {
+				            $.each(data, function(key, value) {
+				                $("#stats").append("<tr>");
+				                $("#stats").append("<th>" + value.libelle + "</th>");
+				                $("#stats").append("<th></th>");
+				                $("#stats").append("<th>" + value.gain + "</th>");
+				                $("#stats").append("<th>" + value.nbr_passage + "</th>");
+				                $("#stats").append("<th>" + value.gain_total + "</th>");
+				                $("#stats").append("</tr>");
+				            });
+                        }, "json");
+				}
+				
+				function acheterLieu(id_lieu) {
+					$.ajax({
+						url: "http://127.0.0.1:8090/acheter",
+						type: "PUT",
+						data: {id_zone: id_lieu},
+						success: function(data) {
+						    mon_credit = data.credit;
+						    $("#solde").text("Solde : " + data.credit + " credits");
+						    $("#oModal2").hide();
+							$("#oModal1").hide();
+						}
+					});
+				}
+				
+				function get_zones_by_server(lat, lng) {
+				    socket.emit("get_zones", {id: mon_id, latitude: lat, longitude: lng});
+				}
+				
+				function add_listener_circle(circle, zone) {
+				    google.maps.event.addListener(circle, 'click', function(ev) {
+				        var geocoder = new google.maps.Geocoder;
+				        geocoder.geocode({'location': {lat: zone.latitude, lng: zone.longitude}}, function(results, status) {
+                          if (status === 'OK') {
+                            if (results[0]) {
+                              $("#adresseLieu").text(results[0].formatted_address);
+                            }
+                         }
+                        });
+
+						$("#nomLieu").empty();
+						$("#coutLieu").empty();
+						$("#proprietaireLieu").empty();
+						if (zone.path_image) {
+						    $("#imgLieu").prop("src", zone.path_image);
+						} else {
+						    $("#imgLieu").prop("src", '/app/View/Images/lieu_inconnu.png');
+						}
+						if (zone.pseudo != null) {
+						    $("#proprietaireLieu").text('Propriétaire : ' + zone.pseudo);
+						} else {
+						    $("#proprietaireLieu").text('Lieu libre');
+					    }
+						$("#nomLieu").text(zone.libelle);
+						$("#coutLieu").text('Prix : ' + zone.valeur);
+						if (zone.id_utilisateur == mon_id) {
+						    $("#achat").prop('disabled', true);
+        					$("#achat").text('A vous!');
+        			    } else {
+        			        if (google.maps.geometry.spherical.computeDistanceBetween(mon_marqueur.getPosition(), circle.getCenter()) <= circle.getRadius()) {
+						        if (zone.id_utilisateur == null) {
+						            if (zone.valeur > mon_credit) {
+						                $("#achat").prop('disabled', true);
+            					        $("#achat").text('Trop cher!');
+						            } else {
+						                $("#achat").prop("disabled", false);
+						                $("#achat").text("Acheter");
+						                $("#achat").click(function () {
+							                acheterLieu(zone.id_zone);
+							                $("#modal-lieu").modal('close');
+						                });
+						           }
+						        } else {
+            				        $("#achat").prop('disabled', true);
+            					    $("#achat").text('Déjà prise!');
+            					}
+        					} else {
+        					    $("#achat").prop('disabled', true);
+        					    $("#achat").text('Trop loin!');
+        				    }
+        				}
+						$("#modal-lieu").modal('open');        						
+				    });
+		        }
+				
+				
+				function deconnexion() {
+				    $.ajax({
+				        url: "http://127.0.0.1:8090/logout",
+				        type: "POST",
+				        success: function(data) {
+				            window.location.href = "http://127.0.0.1:8090/login";
+				        },
+				        error: function(err, err_message_err_throw) {
+				            alert(err);
+				        }
+				   });
+				}    
+				$(document).ready(function() {		    
+                    $(".button-collapse").sideNav();
+                    $(".modal").modal();
+               });
+		    </script>
+		    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqwPesSRd4j-HDQdCI78AY-_P6qPr2u3w&callback=initMap"></script>
+      </main>
+      <!-- Popup stats -->
+      <div id="modal-stats" class="modal modal-fixed-footer">
+		<div class="modal-content">
+		    <div class="row">
+		        <div class="col s12">
+		            <table class="striped">
+		                <thead>
+		                    <th>Nom lieu</th>
+		                    <th>Date acquisition</th>
+		                    <th>Gain par passage</th>
+		                    <th>Nombre de passages</th>
+		                    <th>Gain total</th>
+                        </thead>
+                        <tbody id="stats">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+	    </div>
+	    <div class="modal-footer">
+	        <a class="modal-action modal-close waves-effect waves-green btn-flat">Quitter</a>
+	    </div>
+	</div>
+	<!-- fin popup stats -->
+	<!-- popup lieu -->
+	<div id="modal-lieu" class="modal modal-fixed-footer">
+		<div class="modal-content">
+            <div class="card">
+                <div class="card-image">
+                    <img id="imgLieu" />
+                    <span id="nomLieu" class="card-title"></span>
+                </div>
+                <div class="card-content">
+                    <div>
+                        <span id="adresseLieu"></span>
+                    </div>
+                    <div>
+                        <span id="proprietaireLieu"></span>
+                    </div>
+                    <div>
+                        <span id="coutLieu"></span>
+                   </div>
+               </div>
+            </div>
+	    </div>
+	    <div class="modal-footer">
+	        <button id="achat" class="waves-effect waves-green btn-flat pulse">Acheter</button>
+	        <button class="modal-action modal-close waves-effect waves-green btn-flat">Quitter</button>
+	    </div>
+	</div>
+	<!-- fin popup lieu -->
+	<!-- popup classement -->
+	<div id="modal-classement" class="modal modal-fixed-footer">
+		<div class="modal-content">
+            <div class="card">
+                <ul class="collection" id="listPlayers">
+                </ul>
+            </div>
+	    </div>
+	    <div class="modal-footer">
+	        <button class="modal-action modal-close waves-effect waves-green btn-flat">Quitter</button>
+	    </div>
+	</div>
+	<!-- popup mes lieux -->
+	<div id="modal-gestion-lieux" class="modal modal-fixed-footer">
+		<div class="modal-content">
+            <div class="card">
+                <ul class="collection with-header" id="listLieux">
+                </ul>
+            </div>
+	    </div>
+	    <div class="modal-footer">
+	        <button class="modal-action modal-close waves-effect waves-green btn-flat">Quitter</button>
+	    </div>
+	</div>
+  </body>
+</html>
+	
+	
+<!--POPUP MES LIEUX-->	
+	
+	<div id="oModal4" class="oModal4" style="overflow-y:none;display:none;z-index:175;pointer-events: all;">
+		<div style="border-radius:4px;">
+			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
+				<button type="button" class="mdl-button mdl-js-button mdl-js-ripple-effect" onclick="document.getElementById('oModal4').style.display = 'none';" style="opacity:0.6;border: solid 1px #0089c2;padding:0;margin:auto;width:144px;height:40px;color: #0089c2;position:absolute;bottom:5;right:5;text-align:center;background-color: white;border-radius: 4px;">Retour</button>
+			</div>
+			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone">
+				<div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-phone" style="float:left;width:40%;padding-top:15px;font-size:14px;">
+					<span id="countLieux"></span>
+				</div>
+				<div class="mdl-cell mdl-cell--6-col mdl-cell--6-col-tablet mdl-cell--6-col-phone" style="float:right;width:40%;font-size:14px;padding-top:15px;">
+					<span>Total: 10 000 zones</span>
+				</div>
+			</div>
+			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone" style="overflow-y:auto;max-height:500px;">
+				<ul class="demo-list-three mdl-list" id="listLieux">
+				  <!--
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/paysage.png' style='width:30px;height:40px;' border='0' alt=''>
+				      <span>Aaron Paul</span>
+				      <span class="mdl-list__item-text-body">
+				        Aaron Paul played the role of Jesse in Breaking Bad. He also featured in
+				        the "Need For Speed" Movie.
+				      </span>
+				    </span>
+					<img  class='article-image' src='Images/vendre.png' style='width:30px;height:30px;padding-top:10xp;' border='0' alt=''>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/paysage.png' style='width:30px;height:40px;' border='0' alt=''>
+				      <span>Bob Odenkirk</span>
+				      <span class="mdl-list__item-text-body">
+				        Bob Odinkrik played the role of Saul in Breaking Bad. Due to public fondness for the
+				        character, Bob stars in his own show now, called "Better Call Saul".
+				      </span>
+				    </span>
+					<img  class='article-image' src='Images/vendre.png' style='width:30px;height:30px;padding-top:10xp;' border='0' alt=''>
+				  </li>
+				   <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/paysage.png' style='width:30px;height:40px;' border='0' alt=''>
+				      <span>Bryan Cranston</span>
+				      <span class="mdl-list__item-text-body">
+				        Bryan Cranston played the role of Walter in Breaking Bad. He is also known
+				        for playing Hal in Malcom in the Middle.
+				      </span>
+				    </span>
+					<img  class='article-image' src='Images/vendre.png' style='width:30px;height:30px;padding-top:10xp;' border='0' alt=''>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/paysage.png' style='width:30px;height:40px;' border='0' alt=''>
+				      <span>Aaron Paul</span>
+				      <span class="mdl-list__item-text-body">
+				        Aaron Paul played the role of Jesse in Breaking Bad. He also featured in
+				        the "Need For Speed" Movie.
+				      </span>
+				    </span>
+					<img  class='article-image' src='Images/vendre.png' style='width:30px;height:30px;padding-top:10xp;' border='0' alt=''>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/paysage.png' style='width:30px;height:40px;' border='0' alt=''>
+				      <span>Bob Odenkirk</span>
+				      <span class="mdl-list__item-text-body">
+				        Bob Odinkrik played the role of Saul in Breaking Bad. Due to public fondness for the
+				        character, Bob stars in his own show now, called "Better Call Saul".
+				      </span>
+				    </span>
+					<img  class='article-image' src='Images/vendre.png' style='width:30px;height:30px;padding-top:10xp;' border='0' alt=''>	
+				  </li> -->
+				</ul>
+			</div>
+		</div>
+	</div>
+	
+	
+<!--POPUP GESTION COMPTE-->	
+	
+	<div id="oModal5" class="oModal5" style="overflow-y:none;display:none;z-index:175;pointer-events: all;">
+		<div style="border-radius:4px;">
+			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
+				<ul class="demo-list-three mdl-list" style="padding:0px 0px;">
+				   <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/utilisateur.png' style='width:30px;height:30px;' border='0' alt=''>
+				      <span>Bryan Cranston</span>
+				      <span class="mdl-list__item-text-body">
+				        Bryan Cranston played the role of Walter in Breaking Bad.
+				      </span>
+				    </span>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/mail.png' style='width:30px;height:30px;' border='0' alt=''>
+				      <span>Aaron Paul</span>
+				      <span class="mdl-list__item-text-body">
+				        Aaron Paul played the role of Jesse in Breaking Bad.
+				      </span>
+				    </span>
+				  </li>
+				  <li class="mdl-list__item mdl-list__item--three-line">
+				    <span class="mdl-list__item-primary-content">
+				      <img  class='article-image' src='Images/telephone.png' style='width:30px;height:30px;' border='0' alt=''>
+				      <span>Bob Odenkirk</span>
+				      <span class="mdl-list__item-text-body">
+				        Bob Odinkrik played the role of Saul in Breaking Bad.
+				    </span>
+				  </li>
+				</ul>
+			</div>
+			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
+				<button type="button" class="mdl-button mdl-js-button mdl-js-ripple-effect" onclick="document.getElementById('oModal5').style.display = 'none';" style="border: solid 1px #0089c2;padding:0;margin:auto;min-width:190px;height:40px;color: #0089c2;text-align:center;background-color: white;border-radius: 4px;">Changer Mot de passe</button>
+			</div>
+			<div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-grid portfolio-max-width">
+				<button type="button" class="mdl-button mdl-js-button mdl-js-ripple-effect" onclick="document.getElementById('oModal5').style.display = 'none';" style="border: solid 1px #0089c2;padding:0;margin:auto;width:190px;height:40px;color: #0089c2;text-align:center;background-color: white;border-radius: 4px;">Desactiver mon compte</button>
+			</div>
+		</div>
+	</div>
